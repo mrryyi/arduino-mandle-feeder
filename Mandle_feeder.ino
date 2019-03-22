@@ -29,11 +29,12 @@ bool setToFeedSpecialTimes = false;
 // User information about which hours to feed.
 bool feedingTheseHours[24];
 
-// If we are supposed to feed @12 and @13, then,
-// when feeding @12, we set nextPossibleSpecialTime
-// to 13, such that feeding does not get triggered by
-// values of 12.
-bool nextPossibleSpecialTime = 0;
+// If we are supposed to feed @12 and @13 o clock, then,
+// when feeding @12, we set lastFeed to be 12, 
+// such that feeding does not get triggered by
+// values of 12 once more, and only values of 13 or more
+// can trigger feedings.
+// Set to -1 to allow first one to do
 int lastFeed = -1;
 
 // THEN: what time of day was recorded, in milliseconds of a day (12h, 00m -> 43200000ms)
@@ -223,7 +224,7 @@ void website(WiFiEspClient* client){
   client->print(F("<input type=\"checkbox\" name=\"h07\"><label>07:00:00</label><br/>\r\n"));
   client->print(F("<input type=\"checkbox\" name=\"h08\"><label>08:00:00</label><br/>\r\n"));
   client->print(F("<input type=\"checkbox\" name=\"h09\"><label>09:00:00</label><br/>\r\n"));
-  client->print(F("<input type=\"checkbox\" name=\"h10\"><label>09:00:00</label><br/>\r\n"));
+  client->print(F("<input type=\"checkbox\" name=\"h10\"><label>10:00:00</label><br/>\r\n"));
   client->print(F("<input type=\"checkbox\" name=\"h11\"><label>11:00:00</label><br/>\r\n"));
   client->print(F("<input type=\"checkbox\" name=\"h12\"><label>12:00:00</label><br/>\r\n"));
   client->print(F("<input type=\"checkbox\" name=\"h13\"><label>13:00:00</label><br/>\r\n"));
@@ -303,6 +304,10 @@ bool getTimeFromWeb(){
 
       // Now that we found the '+' in the "hh:mm+" format,
       // we can copy the previous values into our variables.
+      // It is a json file, but we don't need to include a 
+      // json library, because I am awesome. And there's just one
+      // '+' character in the whole file, at exactly the appropriate
+      // time.
       if (buf[5] == '+'){
         hourOfDay = ((buf[0] - 48) * 10)  + (buf[1] - 48);
         minuteOfDay = ((buf[3] - 48) * 10)  + (buf[4] - 48);
@@ -353,14 +358,16 @@ bool getTimeFromWeb(){
 
 
 
-
+int fedThisHour = -1;
 
 
 
 // The following block will check if we need to feed,
 // but only if we have gotten time from the web. (timeGotten)
 // We need to feed if the arduino time since last time-gettening
-// aligns with an hour that which is supposed to 
+// aligns with an hour that a client set to be a feeding hour.
+// If it has fed this hour, we advance the possibility of
+// feeding to be at least until the next possible hour.
 
 bool isSpecialTime () {
   // Offset since gotten time from web, in milliseconds.
@@ -381,26 +388,19 @@ bool isSpecialTime () {
   
   int nowHour = (NOW / HOUR) % 24;
 
-  double nHour= float(THEN + SINCE) / HOUR;
-  double c = 24;
-  nHour = fmod(float(NOW/HOUR), c);
-  Serial.print(NOW);
-  Serial.print(", ");
-  Serial.print(nowHour);
-  Serial.print(", ");
-  Serial.print(nHour);
-  Serial.print(", ");
-  Serial.println(lastFeed);
+  // If there is only one hour on the day we're supposed to feed,
+  // then nowHour will eventually make a return to the same value.
+  // In this case, we use this thing to make sure that we don't not
+  // let feedings occur on a new day.
+  if ( nowHour == fedThisHour - 1){
+    fedThisHour = -1;
+  }
 
   // Return true only if we're supposed to feed on this hour,
-  // as well as that we haven't before (indicated by nextPossibleSpecialTime)
-  if (feedingTheseHours[nowHour] == true && (nowHour >= ((lastFeed+1)%24))) {
-
-    // Resets to 0 when NOW == 23 because (23+1) % 24 is 0.
-    // This will ensure that the next possible special time is on a new day.
-    // We interpret time as a clock that goes upward at a rate of one second per second
-    // and resets on a new day.
-    lastFeed = nowHour;
+  // as well as that we haven't before, this hour on this day.
+  if (feedingTheseHours[nowHour] == true && nowHour != fedThisHour) {
+    
+    fedThisHour = nowHour;
     return true;
   }
   
@@ -562,6 +562,10 @@ void loop() {
             resetFeedingHours();
             
             bool foundSpace = false;
+
+            // To allow a feed in case previous settings would interfere with
+            // newer settings.
+            fedThisHour = -1;
             byte hour;
             
             do {
