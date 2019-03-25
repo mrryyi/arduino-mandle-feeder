@@ -3,7 +3,6 @@
 #include <RingBuf.h>
 #include <Servo.h>
 #include "WiFiEsp.h"
-#include <math.h>
 
 #define HOUR (60 * 60 * 1000L)
 #define MINUTE (60 * 1000L)
@@ -30,12 +29,12 @@ bool setToFeedSpecialTimes = false;
 bool feedingTheseHours[24];
 
 // If we are supposed to feed @12 and @13 o clock, then,
-// when feeding @12, we set lastFeed to be 12, 
+// when feeding @12, we set fedThisHour to be 12, 
 // such that feeding does not get triggered by
 // values of 12 once more, and only values of 13 or more
 // can trigger feedings.
 // Set to -1 to allow first one to do
-int lastFeed = -1;
+int fedThisHour = -1;
 
 // THEN: what time of day was recorded, in milliseconds of a day (12h, 00m -> 43200000ms)
 // NOW: What the time is now. 
@@ -301,14 +300,15 @@ bool getTimeFromWeb(){
       buf[3] = buf[4];
       buf[4] = buf[5];
       buf[5] = c;
-
-      // Now that we found the '+' in the "hh:mm+" format,
-      // we can copy the previous values into our variables.
-      // It is a json file, but we don't need to include a 
-      // json library, because I am awesome. And there's just one
-      // '+' character in the whole file, at exactly the appropriate
-      // time.
+      
+      // Look for '+'
       if (buf[5] == '+'){
+        // Now that we found the '+' in the "hh:mm+" format,
+        // we can copy the previous values into our variables.
+        // It is a json file, but we don't need to include a 
+        // json library, because I am awesome. And there's just one
+        // '+' character in the whole file, at exactly the appropriate
+        // time.
         hourOfDay = ((buf[0] - 48) * 10)  + (buf[1] - 48);
         minuteOfDay = ((buf[3] - 48) * 10)  + (buf[4] - 48);
       }
@@ -358,9 +358,6 @@ bool getTimeFromWeb(){
 
 
 
-int fedThisHour = -1;
-
-
 
 // The following block will check if we need to feed,
 // but only if we have gotten time from the web. (timeGotten)
@@ -389,8 +386,8 @@ bool isSpecialTime () {
   int nowHour = (NOW / HOUR) % 24;
 
   // If there is only one hour on the day we're supposed to feed,
-  // then nowHour will eventually make a return to the same value.
-  // In this case, we use this thing to make sure that we don't not
+  // then nowHour will eventually make a cyclical return to the same value.
+  // In this case, we use this snipper to make sure that we don't not
   // let feedings occur on a new day.
   if ( nowHour == fedThisHour - 1){
     fedThisHour = -1;
