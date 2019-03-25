@@ -88,14 +88,14 @@ int everyThisMinutes;
 // Servo stuff.
 ///////////////////////////////////////////////////////////
 
-Servo servo_9;
+Servo servo_4;
 
 void feed(){
   Serial.println("FEEEEEEEEEEEEEEEEEEEEEEDING");
   pinMode(4, OUTPUT);
-  servo_9.write(10);
+  servo_4.write(10);
   delay(1000);
-  servo_9.write(120);
+  servo_4.write(120);
   delay(1000);
   pinMode(4, INPUT);
 }
@@ -115,6 +115,7 @@ void feed(){
 SoftwareSerial Serial1(6, 7);
 
 // Declare and initialise global arrays for WiFi settings
+// Secure password? 🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔
 char ssid[] = "Johan";
 char pass[] = "johan123";
 
@@ -141,9 +142,9 @@ RingBuffer buf(8);
 void setup() {
 
   resetFeedingHours();
-  servo_9.attach(4);
+  servo_4.attach(4);
   // Set servo to a good position.
-  servo_9.write(120);
+  servo_4.write(120);
   delay(2000);
   pinMode(4, INPUT);
         
@@ -432,7 +433,7 @@ void loop() {
 
     // If time is not gotten (from the web) then we will to get it.
     if(!timeGotten) {
-        // Maybe we get the time.
+        // Maybe we get the time. 🤔
         timeGotten = getTimeFromWeb();
 
         if(timeGotten){
@@ -487,7 +488,7 @@ void loop() {
       lastTimeFedByInterval = millis();
       feed();
     }
-  } // End if check setting
+  } // End if check interval setting
 
 
 
@@ -538,7 +539,7 @@ void loop() {
         if(!userRequestDone){
 
           
-          // Unimportant business beyond this point.
+          // Unimportant business beyond this point in the request.
           if (buf.endsWith("HTTP")) {
             userRequestDone = true;
           }
@@ -659,7 +660,7 @@ void loop() {
         
         
         ///////////////////////////////////////////////////////////
-        // Send website if user's request is done.
+        // Send website if user's request is done. 
         ///////////////////////////////////////////////////////////
         
         // If you've gotten to the end of the line (received a newline
@@ -703,12 +704,12 @@ void loop() {
   } // End if instantFeed
 
   
-} // End loop
+} // End loop function
 
 
 
 //  Prints the status of 
-//    SSID        - of the wifi         (external)
+//    SSID        - of the wifi source  (external)
 //    IP Address  - of the wifi shield  (internal)
 
 void printWifiStatus() {
