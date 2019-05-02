@@ -337,7 +337,6 @@ bool getTimeFromWeb(){
     client.stop();
   } // End if client is not connected.
   
-  bool gotTime = false;
   // If the values are < 0 for either variable,
   // then we failed to get what the API was trying to tell us.
   if(hourOfDay < 0 || minuteOfDay < 0) {
